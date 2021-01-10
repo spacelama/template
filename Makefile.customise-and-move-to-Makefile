@@ -1,0 +1,28 @@
+ESP_ADDR ?= <dns name of target>
+ESP_PORT ?= 8266
+ESP_PWD ?= <ota flash password>
+BOARD ?= d1_mini
+
+WIFI_SSID ?= <primary ssid>
+WIFI_SSID2 ?= <failover ssid>
+WIFI_PASSWD ?= <wifi wpa2 passphrase (for both primary and failover)>
+
+SYSLOG ?= <syslog ip address>
+
+BUILD_EXTRA_FLAGS=-D_SSID=\"$(WIFI_SSID)\" -D_SSID2=\"$(WIFI_SSID2)\" -D_PWD=\"$(WIFI_PASSWD)\" -D_SYSLOG=\"$(SYSLOG)\" -D_OTA_PWD=\"$(ESP_PWD)\" -D_HOSTNAME=\"$(ESP_ADDR)\"
+
+# see /home/tconnors/Arduino/makeEspArduino/README.md :
+#LIBS=
+#CUSTOM_LIBS=
+
+UPLOAD_PORT ?= $(shell ls -1tr /dev/tty*USB* 2>/dev/null | tail -1)
+UPLOAD_PORT := $(if $(UPLOAD_PORT),$(UPLOAD_PORT),/dev/ttyS0)
+UPLOAD_VERB ?= -v
+
+OTA_ADDR ?= $(ESP_ADDR)
+OTA_PWD ?= $(ESP_PWD)
+
+include $(HOME)/Arduino/makeEspArduino/makeEspArduino.mk
+
+#.DEFAULT_GOAL := ota
+.DEFAULT_GOAL := flash
