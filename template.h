@@ -18,8 +18,10 @@ void reboot(void);
 void ledBright(unsigned int val);
 void ledRamp(int start, int finish, unsigned int duration, unsigned int steps);
 int getArgValue(String name);
+String getArgValueStr(String name);
 
 extern int ONBOARD_LED_PIN;
 extern int led_range;
+extern String syslog_buffer;
 
 #endif
