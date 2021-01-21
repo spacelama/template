@@ -22,6 +22,7 @@ UPLOAD_VERB ?= -v
 OTA_ADDR ?= $(ESP_ADDR)
 OTA_PWD ?= $(ESP_PWD)
 
+# comes from https://github.com/plerup/makeEspArduino.git
 include $(HOME)/Arduino/makeEspArduino/makeEspArduino.mk
 
 #.DEFAULT_GOAL := ota
