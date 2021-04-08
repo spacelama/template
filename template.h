@@ -10,10 +10,12 @@
 
 // #define _OTA_PWD "ota flash password"
 
+void http_start_stub();
 void setup_stub();
 void loop_stub();
 String http_uptime_stub();
 void reboot(void);
+void start_wifi();
 
 void ledBright(unsigned int val);
 void ledRamp(int start, int finish, unsigned int duration, unsigned int steps);
@@ -23,5 +25,12 @@ String getArgValueStr(String name);
 extern int ONBOARD_LED_PIN;
 extern int led_range;
 extern String syslog_buffer;
+
+extern bool wifi_started;
+extern bool http_started;
+
+#if ESP32
+extern RTC_DATA_ATTR int bootCount;
+#endif
 
 #endif

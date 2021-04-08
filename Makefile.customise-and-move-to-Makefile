@@ -1,5 +1,6 @@
 ESP_ADDR ?= <dns name of target>
-ESP_PORT ?= 8266
+# let it default ESP_PORT ?= 8266
+# or 3232 for esp32
 ESP_PWD ?= <ota flash password>
 BOARD ?= d1_mini
 

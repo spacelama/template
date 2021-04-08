@@ -3,13 +3,27 @@
  */
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+#if defined(ESP8266)
 #include <WiFiClient.h>
+#include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
+//#include "AsyncPing.h"
+#elif ESP32
+#include "esp8266-compat.h"
+#include <Update.h>
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+#include <FS.h>
+#include <SPI.h>
+#include <WebServer.h>
+#include <analogWrite.h>
+#include <RTClib.h>
+#endif
 #include "Syslog.h"
-#include "AsyncPing.h"
 #include "template.h"
 
 String debug = "";
@@ -41,9 +55,15 @@ int triggered_wifi_failover=0;
 int wifi_failover_count=0;
 const int wifi_failover_threshold=2;
 int last_ping_time;
+#if defined(ESP8266)
 extern ESP8266WebServer server;
-
 AsyncPing Ping;
+#elif ESP32
+extern WebServer server;
+#endif
+
+bool wifi_started=false;
+bool http_started=false;
 
 // A UDP instance to let us send and receive packets over UDP
 WiFiUDP udpClient;
@@ -52,6 +72,10 @@ Syslog syslog(udpClient, SYSLOG_SERVER.c_str(), SYSLOG_PORT, hostname.c_str(), h
 
 int ONBOARD_LED_PIN = LED_BUILTIN;
 int led_range = 100;
+
+#if ESP32
+RTC_DATA_ATTR int bootCount = 0;
+#endif
 
 extern void setup_stub();
 extern void loop_stub();
@@ -87,7 +111,11 @@ void ledBright(unsigned int val) {
     int brightness = pow (2, (val / R)) - 1;
     // Set the LED output to the calculated brightness
 //    debug += "AnalogWrite(" + String(led_range-brightness) + ")<br><br>";
-    analogWrite(ONBOARD_LED_PIN, led_range - brightness);
+    analogWrite(ONBOARD_LED_PIN, led_range - brightness
+#if ESP32
+                , led_range
+#endif
+        );
     current_led_brightness=val;
 }
 void ledRamp(int start, int finish, unsigned int duration, unsigned int steps) {
@@ -107,17 +135,39 @@ void ledErrorBlink(unsigned int repeat, unsigned int d1, unsigned int d2) {
     }
 }
 
+/*
+Method to print the reason by which ESP32
+has been awaken from sleep
+*/
+void print_wakeup_reason(){
+  esp_sleep_wakeup_cause_t wakeup_reason;
+
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch(wakeup_reason)
+  {
+    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+  }
+}
+
 void reboot(void) {
 //    delay(500);
     // https://github.com/esp8266/Arduino/issues/1017   GPIO15 (D8) must be low, GPIO0 (D3), GPIO2 (D4) high.
     // https://wiki.wemos.cc/products:d1:d1_mini_pro ie, D8=0, D3,D4=1
     // http://arduino-esp8266.readthedocs.io/en/latest/boards.html#boot-messages-and-modes https://www.reddit.com/r/esp8266/comments/7398fn/resetting_wemos_d1_mini/
+#if defined(ESP8266)
     digitalWrite(D8, LOW);
 //                pinMode(D8, INPUT_PULLDOWN);
     digitalWrite(D3, HIGH);
 //    pinMode(D3, INPUT_PULLUP);
     digitalWrite(D4, HIGH);
 //    pinMode(D4, INPUT_PULLUP);
+#endif
     ESP.restart(); //FIXME: pullup resistor to GPIO0: https://github.com/esp8266/Arduino/issues/1017
 }
 
@@ -144,8 +194,10 @@ void http_uptime() {
     // https://www.reddit.com/r/esp8266/wiki/faq
     String content = "Uptime: " +  String(uptime) + " (" + String(days) + " days " + String(hours) + ":" + String(minutes) + ":" + String(seconds) + ")\n";
     content += "Memory: " + String(ESP.getFreeHeap()) + "\n";
+#if defined(ESP8266)
     content += "Heap Fragmentation: " + String(ESP.getHeapFragmentation()) + "\n";
     content += "Max Free Block: " + String(ESP.getMaxFreeBlockSize()) + "\n";
+#endif
     content += "Hostname: " + hostname + "\n";
     content += "Compiled: " + String(__DATE__) + " " + String(__TIME__) + "\n";
 
@@ -201,6 +253,10 @@ void handleNotFound(){
     digitalWrite(ONBOARD_LED_PIN, 0);
 }
 
+void start_wifi() {
+    WiFi.begin(ssid[0].c_str(), password.c_str());
+}
+
 void trigger_wifi_failover() {
     Serial.println("Trigger wifi failover");
     triggered_wifi_failover=1;
@@ -232,7 +288,7 @@ void http_trigger_wifi_failover() {
 void execute_wifi_failover() {
     Serial.println("Execute wifi failover");
     triggered_wifi_failover=0;
-    WiFi.begin(ssid[wifi_index], password);
+    WiFi.begin(ssid[wifi_index].c_str(), password.c_str());
     syslog_buffer="Failed over to wifi index "+String(wifi_index)+ssid[wifi_index];
 }
 
@@ -299,9 +355,11 @@ void eventWiFi(WiFiEvent_t event) {
           dbg_printf("[WiFi] %d, Disconnected - Status %d, %s\n", event, WiFi.status(), connectionStatus( WiFi.status() ).c_str() );
           break;
 
+#if defined(ESP8266)
       case WIFI_EVENT_STAMODE_AUTHMODE_CHANGE:
           dbg_printf("[WiFi] %d, AuthMode Change\n", event);
           break;
+#endif
 
       case WIFI_EVENT_STAMODE_GOT_IP:
           dbg_printf("[WiFi] %d, Got IP: %s\n", event, WiFi.localIP().toString().c_str());
@@ -309,15 +367,19 @@ void eventWiFi(WiFiEvent_t event) {
               syslog.log(LOG_WARNING, syslog_buffer.c_str());
           }
           syslog.logf(LOG_INFO, "[WiFi] %d, Got IP: %s, using wifi index %i %s", event, WiFi.localIP().toString().c_str(), wifi_index, ssid[wifi_index].c_str());
+          wifi_started = true;
           break;
+#if defined(ESP8266)
       case WIFI_EVENT_STAMODE_DHCP_TIMEOUT:
           dbg_printf("[WiFi] %d, DHCP Timeout\n", event);
           break;
+#endif
 
       case WIFI_EVENT_SOFTAPMODE_STACONNECTED:
           dbg_printf("[AP] %d, Client Connected\n", event);
           break;
 
+#if defined(ESP8266)
       case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
           dbg_printf("[AP] %d, Client Disconnected\n", event);
           break;
@@ -325,10 +387,12 @@ void eventWiFi(WiFiEvent_t event) {
       case WIFI_EVENT_SOFTAPMODE_PROBEREQRECVED:
 //      dbg_printf("[AP] %d, Probe Request Recieved\n", event);
           break;
+#endif
     }
 }
 
 void setup(void){
+#if defined(ESP8266)
     digitalWrite(D8, LOW);  // should be unused, reset pin, assign to known state
     digitalWrite(D4, HIGH); // should be unused, reset pin, assign to known state
 //    digitalWrite(D3, HIGH); // should be unused, reset pin, assign to known state - overriden by input_pullup below
@@ -337,16 +401,19 @@ void setup(void){
     pinMode(D3, INPUT_PULLUP);
     pinMode(D4, OUTPUT);
     pinMode(D8, OUTPUT);
-
+#endif
     // Calculate the R variable (only needs to be done once at setup)
     R = (led_range * log10(2))/(log10(led_range));
 
     pinMode(ONBOARD_LED_PIN, OUTPUT);
+#if defined(ESP8266)
     analogWriteRange(led_range);
+#endif
 
     /* switch on led */
 //    digitalWrite(ONBOARD_LED_PIN, LOW);
-    ledRamp(0,led_range,1000,30);
+//    ledRamp(0,led_range,1000,30);
+    ledBright(led_range);
 
 //    pinMode(relayPin, OUTPUT);
 
@@ -354,14 +421,24 @@ void setup(void){
     Serial.println("");
     Serial.println("Booting");
 
+#if ESP32
+    //Increment boot number and print it every reboot
+    Serial.println("Boot number: " + String(bootCount));
+#endif
+
+    //Print the wakeup reason for ESP32
+    print_wakeup_reason();
+
+    ledBright(0);
+
     WiFi.setAutoConnect(true);  // Autoconnect to last known Wifi on startup
     WiFi.setAutoReconnect(true);
     WiFi.onEvent(eventWiFi);      // Handle WiFi event
-
     WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid[0], password);
+    if (!bootCount) { //FIXME: && ! on_battery_power) {
+        start_wifi();
 
-    Serial.println("");
+        Serial.println("");
 
 //    while (WiFi.waitForConnectResult() != WL_CONNECTED) {
 //        Serial.println("Connection Failed! Rebooting...");
@@ -369,18 +446,19 @@ void setup(void){
 //        reboot();
 //    }
 
-    Serial.println("");
-    Serial.print("Connected to ");
-    Serial.println(ssid[0]);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());
+//         Serial.println("");
+//         Serial.print("Connected to ");
+//         Serial.println(ssid[0]);
+//         Serial.print("IP address: ");
+//         Serial.println(WiFi.localIP());
 
-    //first parameter is name of access point, second is the password
-//    wifiManager.autoConnect("ledstrip");
+//     //first parameter is name of access point, second is the password
+// //    wifiManager.autoConnect("ledstrip");
 
-//    WiFiManager wifiManager;
+// //    WiFiManager wifiManager;
 
-    Serial.println("");
+//         Serial.println("");
+    }
 
     //find it as http://lights.local
     /*if (MDNS.begin("lights"))
@@ -388,11 +466,24 @@ void setup(void){
       Serial.println("MDNS responder started");
       }*/
 
-    ledRamp(led_range,0,1000,30);
+//    ledRamp(led_range,0,1000,30);
 
-    delay(1500);
+//    delay(1500);
 
+//    ledRamp(0,led_range,80,30);
+//    ledBright(led_range);
+//    ledBright(1);  // WARNING: don't leave led at analogue value for length of time, since led strip doesn't like it even when it's operating on another pin.  Timing?
+    digitalWrite(ONBOARD_LED_PIN, 1);
+    Serial.println("Booted");
+
+    setup_stub();
+    Serial.println("Ready!");
+    ++bootCount;
+}
+
+void http_start() {
 //    server.on("/", handleRoot);
+    http_started=true;
 
     server.on("/uptime", http_uptime);
 
@@ -405,10 +496,9 @@ void setup(void){
 
     server.onNotFound(handleNotFound);
 
+    http_start_stub();
     server.begin();
     Serial.println("HTTP server started");
-
-    ledRamp(0,led_range,80,30);
 
     // Port defaults to 8266
     // ArduinoOTA.setPort(8266);
@@ -452,6 +542,8 @@ void setup(void){
     /* setup the OTA server */
     ArduinoOTA.begin();
 
+    //FIXME: port to esp32
+#if defined (ESP8266)
     /* Setup the pings */
     Ping.on(true,[](const AsyncPingResponse& response){
         IPAddress addr(response.addr); //to prevent with no const toString() in 2.3.0
@@ -473,22 +565,19 @@ void setup(void){
         }
         return true;
       });
-
+#endif
     last_ping_time=millis();
-//    ledBright(1);  // WARNING: don't leave led at analogue value for length of time, since led strip doesn't like it even when it's operating on another pin.  Timing?
-    digitalWrite(ONBOARD_LED_PIN, 1);
-    Serial.println("Booted");
-
-    setup_stub();
-    Serial.println("Ready!");
 }
 
 void loop() {
+    if (wifi_started && !http_started) {
+        http_start();
+    }
     if (triggered_wifi_failover) {
         execute_wifi_failover();
     }
 
-    server.handleClient();
+    server.handleClient(); //FIXME: temporarily disabled for testing of camera
     ArduinoOTA.handle();
     delay(1);  // FIXME: find a generic way of doing this.  yield() wasn't always reliable
     loop_stub();
@@ -496,8 +585,10 @@ void loop() {
     if ((millis() - last_ping_time)/1000 > 60) {
         if (WiFi.status() != WL_CONNECTED) {
             increment_wifi_failover();
+#if defined(ESP8266)
         } else {
             Ping.begin(WiFi.gatewayIP());
+#endif
         }
         last_ping_time=millis();
     }
