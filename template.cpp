@@ -3,25 +3,26 @@
  */
 
 #include <Arduino.h>
+// FIXME: the preprocessor doesn't cope with these, so manually enable/disable each include per what you're building
 #if defined(ESP8266)
 #include <WiFiClient.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoOTA.h>
-//#include "AsyncPing.h"
+#include "AsyncPing.h"
 #elif ESP32
-#include "esp8266-compat.h"
-#include <Update.h>
-#include <WiFi.h>
-#include <ESPmDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
-#include <FS.h>
-#include <SPI.h>
-#include <WebServer.h>
-#include <analogWrite.h>
-#include <RTClib.h>
+// #include "esp8266-compat.h"
+// #include <Update.h>
+// #include <WiFi.h>
+// #include <ESPmDNS.h>
+// #include <WiFiUdp.h>
+// #include <ArduinoOTA.h>
+// #include <FS.h>
+// #include <SPI.h>
+// #include <WebServer.h>
+// #include <analogWrite.h>
+// #include <RTClib.h>
 #endif
 #include "Syslog.h"
 #include "template.h"
@@ -74,7 +75,7 @@ int ONBOARD_LED_PIN = LED_BUILTIN;
 int led_range = 100;
 
 #if ESP32
-RTC_DATA_ATTR int bootCount = 0;
+// RTC_DATA_ATTR int bootCount = 0;
 #endif
 
 extern void setup_stub();
@@ -113,7 +114,7 @@ void ledBright(unsigned int val) {
 //    debug += "AnalogWrite(" + String(led_range-brightness) + ")<br><br>";
     analogWrite(ONBOARD_LED_PIN, led_range - brightness
 #if ESP32
-                , led_range
+                // , led_range
 #endif
         );
     current_led_brightness=val;
@@ -139,21 +140,21 @@ void ledErrorBlink(unsigned int repeat, unsigned int d1, unsigned int d2) {
 Method to print the reason by which ESP32
 has been awaken from sleep
 */
-void print_wakeup_reason(){
-  esp_sleep_wakeup_cause_t wakeup_reason;
+// void print_wakeup_reason(){
+//   esp_sleep_wakeup_cause_t wakeup_reason;
 
-  wakeup_reason = esp_sleep_get_wakeup_cause();
+//   wakeup_reason = esp_sleep_get_wakeup_cause();
 
-  switch(wakeup_reason)
-  {
-    case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
-    case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
-    case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
-    case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
-    case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
-    default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
-  }
-}
+//   switch(wakeup_reason)
+//   {
+//     case ESP_SLEEP_WAKEUP_EXT0 : Serial.println("Wakeup caused by external signal using RTC_IO"); break;
+//     case ESP_SLEEP_WAKEUP_EXT1 : Serial.println("Wakeup caused by external signal using RTC_CNTL"); break;
+//     case ESP_SLEEP_WAKEUP_TIMER : Serial.println("Wakeup caused by timer"); break;
+//     case ESP_SLEEP_WAKEUP_TOUCHPAD : Serial.println("Wakeup caused by touchpad"); break;
+//     case ESP_SLEEP_WAKEUP_ULP : Serial.println("Wakeup caused by ULP program"); break;
+//     default : Serial.printf("Wakeup was not caused by deep sleep: %d\n",wakeup_reason); break;
+//   }
+// }
 
 void reboot(void) {
 //    delay(500);
@@ -422,12 +423,12 @@ void setup(void){
     Serial.println("Booting");
 
 #if ESP32
-    //Increment boot number and print it every reboot
-    Serial.println("Boot number: " + String(bootCount));
+    // //Increment boot number and print it every reboot
+    // Serial.println("Boot number: " + String(bootCount));
 #endif
 
     //Print the wakeup reason for ESP32
-    print_wakeup_reason();
+    // print_wakeup_reason();
 
     ledBright(0);
 
@@ -435,7 +436,7 @@ void setup(void){
     WiFi.setAutoReconnect(true);
     WiFi.onEvent(eventWiFi);      // Handle WiFi event
     WiFi.mode(WIFI_STA);
-    if (!bootCount) { //FIXME: && ! on_battery_power) {
+    // if (!bootCount) { //FIXME: && ! on_battery_power) {
         start_wifi();
 
         Serial.println("");
@@ -458,7 +459,7 @@ void setup(void){
 // //    WiFiManager wifiManager;
 
 //         Serial.println("");
-    }
+    // }
 
     //find it as http://lights.local
     /*if (MDNS.begin("lights"))
@@ -478,7 +479,7 @@ void setup(void){
 
     setup_stub();
     Serial.println("Ready!");
-    ++bootCount;
+    // ++bootCount;
 }
 
 void http_start() {
@@ -494,9 +495,11 @@ void http_start() {
 
     server.on("/failover_wifi", http_trigger_wifi_failover);
 
-    server.onNotFound(handleNotFound);
 
     http_start_stub();
+
+    server.onNotFound(handleNotFound);
+
     server.begin();
     Serial.println("HTTP server started");
 

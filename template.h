@@ -30,7 +30,7 @@ extern bool wifi_started;
 extern bool http_started;
 
 #if ESP32
-extern RTC_DATA_ATTR int bootCount;
+/* extern RTC_DATA_ATTR int bootCount; */
 #endif
 
 #endif
