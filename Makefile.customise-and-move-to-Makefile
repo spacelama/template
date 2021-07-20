@@ -1,3 +1,5 @@
+USE_CCACHE=1
+
 ESP_ADDR ?= <dns name of target>
 # let it default ESP_PORT ?= 8266
 # or 3232 for esp32
@@ -9,6 +11,8 @@ WIFI_SSID2 ?= <failover ssid>
 WIFI_PASSWD ?= <wifi wpa2 passphrase (for both primary and failover)>
 
 SYSLOG ?= <syslog ip address>
+
+EXCLUDE_DIRS ?= $(wildcard $(ARDUINO_LIBS)/ESP32_AnalogWrite)
 
 BUILD_EXTRA_FLAGS=-D_SSID=\"$(WIFI_SSID)\" -D_SSID2=\"$(WIFI_SSID2)\" -D_PWD=\"$(WIFI_PASSWD)\" -D_SYSLOG=\"$(SYSLOG)\" -D_OTA_PWD=\"$(ESP_PWD)\" -D_HOSTNAME=\"$(ESP_ADDR)\"
 
