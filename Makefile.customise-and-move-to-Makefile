@@ -7,7 +7,10 @@ ESP_PWD ?= <ota flash password>
 BOARD ?= d1_mini
 
 WIFI_SSID ?= <primary ssid>
-WIFI_SSID2 ?= <failover ssid>  # the dedicated SSID on your second closest AP so that it finds a different AP when locked onto the common SSID you have configured for the primary (see README)
+# The secondary SSID could be the dedicated SSID on your second
+# closest AP so that it finds a different AP when locked onto the
+# common SSID you have configured for the primary above (see README)
+WIFI_SSID2 ?= <failover ssid>
 WIFI_PASSWD ?= <wifi wpa2 passphrase (for both primary and failover)>
 
 SYSLOG ?= <syslog ip address>
