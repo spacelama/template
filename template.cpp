@@ -55,7 +55,9 @@ int wifi_index=0;
 int triggered_wifi_failover=0;
 int wifi_failover_count=0;
 const int wifi_failover_threshold=2;
-int last_ping_time;
+unsigned long last_ping_time;
+unsigned long last_millis=millis();
+int uptime_loop=0;
 #if defined(ESP8266)
 extern ESP8266WebServer server;
 AsyncPing Ping;
@@ -181,12 +183,12 @@ void http_reboot() {
 }
 
 void http_uptime() {
-    int uptime = millis()/1000;
+    unsigned long uptime = (millis()+uptime_loop*(1ll+UINT_MAX))/1000;
 
-    int seconds = uptime;
-    int minutes = seconds/60;
-    int hours = minutes/60;
-    int days = hours/24;
+    unsigned long seconds = uptime;
+    unsigned long minutes = seconds/60;
+    unsigned long hours = minutes/60;
+    unsigned long days = hours/24;
 
     seconds = seconds % 60;
     minutes = minutes % 60;
@@ -573,6 +575,13 @@ void http_start() {
 }
 
 void loop() {
+    unsigned long t=millis();
+    // if 49 day 32 bit rollover:
+    if (last_millis > t) {
+        uptime_loop++;
+    }
+    last_millis=t;
+
     if (wifi_started && !http_started) {
         http_start();
     }
