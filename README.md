@@ -17,7 +17,7 @@ ESP_ADDR=netclock
 
 include $(HOME)/Arduino/template/Makefile
 
-#UPLOAD_PORT = /dev/nopnope
+#UPLOAD_PORT = /dev/tty-USB-locked-down-by-udev
 
 .DEFAULT_GOAL := ota
 #.DEFAULT_GOAL := flash
