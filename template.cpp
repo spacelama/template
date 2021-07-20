@@ -3,13 +3,14 @@
  */
 
 #include <Arduino.h>
+// FIXME: the preprocessor doesn't cope with these, so manually enable/disable each include per what you're building
 #if defined(ESP8266)
-#include <WiFiClient.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266WebServer.h>
-#include <ESP8266mDNS.h>
-#include <ArduinoOTA.h>
-//#include "AsyncPing.h"
+// #include <WiFiClient.h>
+// #include <ESP8266WiFi.h>
+// #include <ESP8266WebServer.h>
+// #include <ESP8266mDNS.h>
+// #include <ArduinoOTA.h>
+// #include "AsyncPing.h"
 #elif ESP32
 #include "esp8266-compat.h"
 #include <Update.h>
@@ -113,7 +114,7 @@ void ledBright(unsigned int val) {
 //    debug += "AnalogWrite(" + String(led_range-brightness) + ")<br><br>";
     analogWrite(ONBOARD_LED_PIN, led_range - brightness
 #if ESP32
-                , led_range
+                // , led_range
 #endif
         );
     current_led_brightness=val;
@@ -435,7 +436,7 @@ void setup(void){
     WiFi.setAutoReconnect(true);
     WiFi.onEvent(eventWiFi);      // Handle WiFi event
     WiFi.mode(WIFI_STA);
-    if (!bootCount) { //FIXME: && ! on_battery_power) {
+    // if (!bootCount) { //FIXME: && ! on_battery_power) {
         start_wifi();
 
         Serial.println("");
@@ -458,7 +459,7 @@ void setup(void){
 // //    WiFiManager wifiManager;
 
 //         Serial.println("");
-    }
+    // }
 
     //find it as http://lights.local
     /*if (MDNS.begin("lights"))
@@ -494,9 +495,11 @@ void http_start() {
 
     server.on("/failover_wifi", http_trigger_wifi_failover);
 
-    server.onNotFound(handleNotFound);
 
     http_start_stub();
+
+    server.onNotFound(handleNotFound);
+
     server.begin();
     Serial.println("HTTP server started");
 
