@@ -84,6 +84,18 @@ extern void setup_stub();
 extern void loop_stub();
 extern String http_uptime_stub();
 
+void logQuery() {
+    String args="";
+    for (uint8_t i=0; i < server.args(); i++){
+        int this_loop_effecting_change=1;
+        if (args != "") {
+            args += " ";
+        }
+        args += server.argName(i) + "=" + server.arg(i);
+    }
+    syslog.logf("query: %s %s?%s", server.client().remoteIP().toString().c_str(), server.uri().c_str(), args.c_str());
+}
+
 /********************************************************
 /*  Debug Print                                         *
 /********************************************************/
