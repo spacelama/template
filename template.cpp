@@ -107,16 +107,16 @@ void dbg_printf ( const char *format, ... )
 float R;
 unsigned int current_led_brightness;
 
-void ledBright(unsigned int val) {
+void ledBright(unsigned int val, int led) {
 //    debug += "ledBright(" + String(val) + ")<br>";
-//    analogWrite(ONBOARD_LED_PIN, led_range-val);
+//    analogWrite(led, led_range-val);
 //    debug += "R=" + String(R) + "<br>";
     int brightness = pow (2, (val / R)) - 1;
     // Set the LED output to the calculated brightness
 //    debug += "AnalogWrite(" + String(led_range-brightness) + ")<br><br>";
-    analogWrite(ONBOARD_LED_PIN, led_range - brightness
+    analogWrite(led, led_range - brightness
 #if ESP32
-                // , led_range
+                , led_range
 #endif
         );
     current_led_brightness=val;
