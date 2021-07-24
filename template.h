@@ -18,12 +18,13 @@ String http_uptime_stub();
 void reboot(void);
 void start_wifi();
 
-void ledBright(unsigned int val);
+extern int ONBOARD_LED_PIN;
+
+void ledBright(unsigned int val, int led=ONBOARD_LED_PIN);
 void ledRamp(int start, int finish, unsigned int duration, unsigned int steps);
 int getArgValue(String name);
 String getArgValueStr(String name);
 
-extern int ONBOARD_LED_PIN;
 extern int led_range;
 extern String syslog_buffer;
 
