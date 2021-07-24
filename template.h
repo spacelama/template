@@ -10,6 +10,7 @@
 
 // #define _OTA_PWD "ota flash password"
 
+void logQuery();
 void http_start_stub();
 void setup_stub();
 void loop_stub();
