@@ -24,6 +24,7 @@
 #include <analogWrite.h>
 #include <RTClib.h>
 #endif
+#include <ESP_EEPROM.h>
 #include "Syslog.h"
 #include "template.h"
 
@@ -213,6 +214,8 @@ void http_uptime() {
     content += "Heap Fragmentation: " + String(ESP.getHeapFragmentation()) + "\n";
     content += "Max Free Block: " + String(ESP.getMaxFreeBlockSize()) + "\n";
 #endif
+    content += "EEprom % used: " + String(EEPROM.percentUsed())+"%\n";
+
     content += "Hostname: " + hostname + "\n";
     content += "Compiled: " + String(__DATE__) + " " + String(__TIME__) + "\n";
 
