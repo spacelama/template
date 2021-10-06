@@ -381,7 +381,9 @@ void eventWiFi(WiFiEvent_t event) {
           if (syslog_buffer != "") {
               syslog.log(LOG_WARNING, syslog_buffer.c_str());
           }
-          syslog.logf(LOG_INFO, "[WiFi] %d, Got IP: %s, using wifi index %i %s", event, WiFi.localIP().toString().c_str(), wifi_index, ssid[wifi_index].c_str());
+          syslog.logf(LOG_INFO, "[WiFi] %d, Got IP: %s, using wifi index %i %s %d %s", event, WiFi.localIP().toString().c_str(),
+                      wifi_index, ssid[wifi_index].c_str(),
+                      WiFi.RSSI(), WiFi.BSSIDstr().c_str());
           wifi_started = true;
           break;
 #if defined(ESP8266)
