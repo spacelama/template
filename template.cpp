@@ -282,7 +282,7 @@ void trigger_wifi_failover() {
     if (++wifi_index > 1) {
         wifi_index=0;
     }
-    syslog_buffer="Failing over to wifi index "+String(wifi_index)+" "+ssid[wifi_index];
+    syslog_buffer="Failing over to wifi index " + String(wifi_index) + " " + ssid[wifi_index];
 }
 
 void increment_wifi_failover() {
@@ -307,7 +307,7 @@ void execute_wifi_failover() {
     Serial.println("Execute wifi failover");
     triggered_wifi_failover=0;
     WiFi.begin(ssid[wifi_index].c_str(), password.c_str());
-    syslog_buffer="Failed over to wifi index "+String(wifi_index)+ssid[wifi_index];
+    syslog_buffer="Failed over to wifi index " + String(wifi_index) + " " + ssid[wifi_index];
 }
 
 int getArgValue(String name)
