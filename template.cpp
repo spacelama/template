@@ -24,6 +24,7 @@
 #include <analogWrite.h>
 #include <RTClib.h>
 #endif
+#include <Arduino_JSON.h>
 #include <ESP_EEPROM.h>
 #include "Syslog.h"
 #include "template.h"
@@ -310,16 +311,47 @@ void execute_wifi_failover() {
     syslog_buffer="Failed over to wifi index " + String(wifi_index) + " " + ssid[wifi_index];
 }
 
+// handles input GET CGI style args, or input PUT/POST json
 int getArgValue(String name)
 {
+    if (server.method() == HTTP_PUT) { // FIXME: and/or POST?
+        JSONVar input_json;
+        String postBody = server.arg("plain");
+
+        syslog.log(LOG_WARNING, "put: " + postBody);
+
+        input_json = JSON.parse(postBody);
+
+        if (input_json.hasOwnProperty(name)) {
+            return input_json[name];
+        }
+        return -1;
+    }
+
     for (uint8_t i = 0; i < server.args(); i++)
         if(server.argName(i) == name)
             return server.arg(i).toInt();
     return -1;
 }
 
+// handles input GET CGI style args, or input PUT/POST json
 String getArgValueStr(String name)
 {
+    if (server.method() == HTTP_PUT) { // FIXME: and/or POST?
+        JSONVar input_json;
+        String postBody = server.arg("plain");
+
+        syslog.log(LOG_WARNING, "put: " + postBody);
+
+        input_json = JSON.parse(postBody);
+
+        if (input_json.hasOwnProperty(name)) {
+            const char *t=input_json[name];
+            return t;
+        }
+        return "";
+    }
+
     for (uint8_t i = 0; i < server.args(); i++)
         if(server.argName(i) == name)
             return server.arg(i);
