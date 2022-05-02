@@ -314,18 +314,19 @@ void execute_wifi_failover() {
 // handles input GET CGI style args, or input PUT/POST json
 int getArgValue(String name)
 {
-    if ((server.method() == HTTP_PUT) || (server.method() == HTTP_POST)) { // FIXME: and/or POST?
-        JSONVar input_json;
-        String postBody = server.arg("plain");
+    JSONVar input_json;
+    String postBody = server.arg("plain");
 
-        input_json = JSON.parse(postBody);
+    input_json = JSON.parse(postBody);
+    if (JSON.typeof(input_json) != "undefined") {
+        syslog.log(LOG_INFO, "json: " + input_json);
 
         if (input_json.hasOwnProperty(name)) {
             syslog.log(LOG_INFO, "put: " + name + " (" + postBody + ")");
 
             return input_json[name];
         }
-        syslog.log(LOG_INFO, "put no result: " + name + " (" + postBody + ")");
+//        syslog.log(LOG_INFO, "put no result: " + name + " (" + postBody + ")");
         return -1;
     }
 
@@ -338,11 +339,12 @@ int getArgValue(String name)
 // handles input GET CGI style args, or input PUT/POST json
 String getArgValueStr(String name)
 {
-    if ((server.method() == HTTP_PUT) || (server.method() == HTTP_POST)) { // FIXME: and/or POST?
-        JSONVar input_json;
-        String postBody = server.arg("plain");
+    JSONVar input_json;
+    String postBody = server.arg("plain");
 
-        input_json = JSON.parse(postBody);
+    input_json = JSON.parse(postBody);
+    if (JSON.typeof(input_json) != "undefined") {
+        syslog.log(LOG_INFO, "json: " + input_json);
 
         if (input_json.hasOwnProperty(name)) {
             syslog.log(LOG_INFO, "put: " + name + " (" + postBody + ")");
@@ -350,7 +352,7 @@ String getArgValueStr(String name)
             const char *t=input_json[name];
             return t;
         }
-        syslog.log(LOG_INFO, "put no result: " + name + " (" + postBody + ")");
+//        syslog.log(LOG_INFO, "put no result: " + name + " (" + postBody + ")");
         return "";
     }
 
