@@ -319,8 +319,6 @@ int getArgValue(String name)
 
     input_json = JSON.parse(postBody);
     if (JSON.typeof(input_json) != "undefined") {
-        syslog.log(LOG_INFO, "json: " + input_json);
-
         if (input_json.hasOwnProperty(name)) {
             syslog.log(LOG_INFO, "put: " + name + " (" + postBody + ")");
 
@@ -344,8 +342,6 @@ String getArgValueStr(String name)
 
     input_json = JSON.parse(postBody);
     if (JSON.typeof(input_json) != "undefined") {
-        syslog.log(LOG_INFO, "json: " + input_json);
-
         if (input_json.hasOwnProperty(name)) {
             syslog.log(LOG_INFO, "put: " + name + " (" + postBody + ")");
 
